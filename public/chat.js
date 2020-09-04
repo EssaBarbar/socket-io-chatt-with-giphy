@@ -10,9 +10,10 @@ const nameOfThePerson = document.getElementById('nameOfThePerson')
 const sendButton = document.getElementById('send')
 const output = document.getElementById('output');
 const feedback = document.getElementById('feedback');
-let gifsContainer = document.getElementById('gifs');
+let commandsButtons = document.getElementById('commandsButtons');
 
 //Emit event when someone click send. When someone click send, we fire back a function.
+
 sendButton.addEventListener('click', function () {
     socket.emit('chat', {
         message: message.value,
@@ -20,12 +21,13 @@ sendButton.addEventListener('click', function () {
     });
     message.value = "";
 });
+
 message.addEventListener('keypress', function () {
     socket.emit('typing', nameOfThePerson.value);
 })
 
 message.addEventListener("input", (event) => {
-    gifsContainer.innerHTML = ""
+    commandsButtons.innerHTML = ""
     console.log(event)
     if (message.value == "/") {
         listCommands()
@@ -42,42 +44,44 @@ message.addEventListener("input", (event) => {
 socket.on('chat', function (data) {
     if (data.type == "img") {
         feedback.innerHTML = "";
-        output.innerHTML += '<p><strong>' + data.nameOfThePerson + ': </strong></p><img class="gif2" src="' + data.message + '"/>';
+        output.innerHTML += '<p><strong>' + data.nameOfThePerson + ': </strong></p><img class="gif2" src="' +
+            data.message + '"/>';
     } else {
         feedback.innerHTML = "";
         output.innerHTML += '<p><strong>' + data.nameOfThePerson + ': </strong>' + data.message + '</p>';
     }
 });
+
 socket.on('typing', function (data) {
     feedback.innerHTML = '<p><em>' + data + ' skriver...</em></p>';
-
 });
 
-
 function listCommands() {
+    commandsButtons.innerHTML = ""
     availebeCommands.forEach(command => {
-        let triggedCommand = document.createElement("p")
-        triggedCommand.innerText = command
-        gifsContainer.appendChild(triggedCommand)
-
+        let triggedCommand = document.createElement("button")
+        triggedCommand.innerText = command + " [Your search word for the gif]"
+        commandsButtons.appendChild(triggedCommand)
+        triggedCommand.onclick = function () {
+            message.value = "/" + command + " "
+            commandsButtons.innerHTML = ""
+        }
     });
 }
-
-
 async function doGiphyFetch(searchWord) {
 
     let apiKey = "q7ItJUQNFTI0rmImSi6qBytYEn0GxBGF"
     let giphyUrl = "http://api.giphy.com/v1/gifs/search?q=" + searchWord + "&api_key=" + apiKey + "&limit=4"
-
     let response = await fetch(giphyUrl)
     let result = await response.json()
 
+    commandsButtons.innerHTML = ""
     result.data.forEach(object => {
         let newGifUrl = object.images.original.url
         let img = new Image()
         img.src = newGifUrl
-        img.style.width = "150px"
-        img.style.height = "150px"
+        img.style.width = "170px"
+        img.style.height = "170px"
         img.style.objectFit = "cover"
         img.onclick = function sendThisAsMsg() {
             socket.emit('chat', {
@@ -86,10 +90,8 @@ async function doGiphyFetch(searchWord) {
                 nameOfThePerson: nameOfThePerson.value
             });
             message.value = "";
-            gifsContainer.innerHTML = ""
-
+            commandsButtons.innerHTML = ""
         }
-        console.log(img)
-        gifsContainer.appendChild(img)
+        commandsButtons.appendChild(img)
     });
 }
